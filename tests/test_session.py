@@ -410,6 +410,8 @@ def test_the_model_is_told_where_its_instructions_are_from(tmp_path):
     note = "These are the project instructions, from `.local-fox/instructions.md`. You already have them"
     system = session.messages[0]["content"]
     assert system.startswith(note) and "Be careful." in system
+    guidance = "Follow each tool's parameter schema and include every required argument."
+    assert guidance in system and guidance in next(e for e in session.entries if e.kind == c.INSTRUCTIONS).text
     entry = next(e for e in session.entries if e.kind == c.INSTRUCTIONS)
     assert entry.text.startswith(note) and entry.text in system  # The feed shows what the model gets
     asyncio.run(session.send("Hi"))  # Unchanged file: not read again before the first prompt

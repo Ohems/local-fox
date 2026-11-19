@@ -432,13 +432,14 @@ class Session:
     def _with_source(self, path: Path, text: str) -> str:
         """
         Returns the instructions as the model gets them: after a line that says which file they are and that the model
-        already has them. Without it, a model asked to read the instructions (e.g. by a task that names the file) does
-        not know it has them, and looks for the file. Empty instructions stay empty.
+        already has them, and with Local Fox's guidance to follow tool schemas and correct invalid calls.
         """
         if not text:
             return ""
         return (f"These are the project instructions, from `{self._shown(path)}`. You already have them: there is no need "
-                f"to read that file.\n\n{text}")
+                f"to read that file.\n\n{text}\n\n"
+                "Local Fox tool-call guidance: Follow each tool's parameter schema and include every required argument. "
+                "If a tool reports a missing or invalid argument, correct it before retrying; do not repeat the same call unchanged.")
 
     def _read_instructions(self, reloaded: bool) -> None:
         path = instructions_path(self.project)

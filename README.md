@@ -104,11 +104,13 @@ project stay on yours: only the requests to the model go there, and the tools st
 
     Allow incoming connections to TCP port 11434 in its firewall.
 2.  **In Local Fox**, type `/host` with the other computer's address, e.g. `/host 192.168.1.20` (the port 11434 is
-    added), or set `ollama_host` in the settings. It applies at once, and the conversation stays. The Ollama panel
-    shows the other computer's server; it has no start or stop button, as those work only for a server on your
-    computer. The model menu lists the other computer's models, and so does the settings view's model field as soon
-    as the address is typed there: if that Ollama does not have the model, the feed says so and names the models it has.
-3.  **Back to your own computer**: `/host default`, or the **Default** button beside `ollama_host` in the settings.
+    added), set `ollama_host` in the settings, or click **Connect to an Ollama server** below the filemap and enter
+    its URL. The address applies at once, stays in `config.json`, and the conversation stays. The Ollama panel shows
+    the other computer's server and offers **Disconnect** instead of the local start/stop actions. The model menu
+    lists the other computer's models, and so does the settings view's model field as soon as the address is typed
+    there: if that Ollama does not have the model, the feed says so and names the models it has.
+3.  **Back to your own computer**: click **Disconnect** in the Ollama panel, use `/host default`, or click the
+    **Default** button beside `ollama_host` in the settings.
 
 Ollama has no passwords: anyone who can reach that port can use the server. Open it only on a network you trust.
 

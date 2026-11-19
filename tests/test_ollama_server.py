@@ -49,17 +49,56 @@ def test_the_panel_keeps_its_height_and_cuts_a_long_model_name(app):
     narrowest = panel.minimumSizeHint().width()
     heights = []
     long_name = "hf.co/someone/a-very-long-model-repository-name-GGUF:Q4_K_M"
-    for can_start, can_stop, text in ((True, False, "Not running"), (False, True, "Idle"), (False, False, "Not reachable")):
+    for can_start, can_stop, can_disconnect, text in ((True, False, False, "Not running"),
+                                                        (False, True, False, "Idle"),
+                                                        (False, False, True, "Not reachable"),
+                                                        (False, False, False, "Not reachable")):
         panel.show_state("http://127.0.0.1:11434", text, can_start=can_start, can_stop=can_stop,
+                         can_disconnect=can_disconnect,
                          model=long_name, placement="77 % CPU / 23 % GPU")
         app.processEvents()
         heights.append(panel.sizeHint().height())
         # The long name does not widen the panel, which would widen the filemap's column
         assert panel.minimumSizeHint().width() == narrowest and panel.status_label.full_text() == text
+        assert panel.disconnect_button.isHidden() == (not can_disconnect)
+        assert not panel.connect_button.isHidden()
     assert len(set(heights)) == 1
     assert panel.model_label.text() != long_name and long_name in panel.model_label.toolTip()
     assert panel.placement_label.text() == "77 % CPU / 23 % GPU"
     panel.close()
+
+def test_connect_and_disconnect_buttons_use_the_host_switch(app, monkeypatch):
+    from local_fox.ui.main_window import MainWindow
+    window = MainWindow(dict(config.DEFAULTS))
+    hosts = []
+    monkeypatch.setattr("local_fox.ui.main_window.QInputDialog.getText",
+                        lambda *args: ("https://ollama.example.org", True))
+    monkeypatch.setattr(window, "_set_host", hosts.append)
+    try:
+        window.session = fake_session()
+        window.ollama_panel.show_state("https://ollama.example.org", "Idle", can_start=False,
+                                       can_disconnect=True)
+        window.ollama_panel.connect_button.click()
+        assert hosts == ["https://ollama.example.org"]
+        window.ollama_panel.disconnect_button.click()
+        assert hosts[-1] == "http://127.0.0.1:11434"
+    finally:
+        window.session = None
+        window.close()
+
+def test_threads_control_stays_available_for_a_remote_server(app):
+    from local_fox.ui.main_window import MainWindow
+    window = MainWindow(dict(config.DEFAULTS))
+    window.session = SimpleNamespace(model="m", num_ctx=65536, num_thread=None,
+                                     config={"ollama_host": "http://ollama.example.org:11434"},
+                                     phase=None, used_tokens=0, changed_files=set(), running=False)
+    try:
+        window._update_status()
+        assert not window.threads_button.isHidden()
+        assert window.threads_button.text() == "threads auto ▾"
+    finally:
+        window.session = None
+        window.close()
 
 def test_poll_reads_ps_and_a_failure_is_not_reachable():
     class Client:

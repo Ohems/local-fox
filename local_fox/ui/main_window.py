@@ -9,7 +9,8 @@ from pathlib import Path
 
 from PySide6.QtCore import QEvent, QFileSystemWatcher, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QFont, QKeySequence, QShortcut
-from PySide6.QtWidgets import (QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMenu, QMessageBox, QPushButton,
+from PySide6.QtWidgets import (QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox, QPushButton,
+                               QInputDialog,
                                QSplitter, QToolTip,
                                QToolButton, QVBoxLayout, QWidget)
 
@@ -148,6 +149,8 @@ class MainWindow(QMainWindow):
         self.ollama_panel = OllamaPanel()
         self.ollama_panel.start_clicked.connect(self._start_ollama)
         self.ollama_panel.stop_clicked.connect(self._stop_ollama)
+        self.ollama_panel.connect_clicked.connect(self._connect_ollama)
+        self.ollama_panel.disconnect_clicked.connect(self._disconnect_ollama)
         files = QWidget()
         files_column = QVBoxLayout(files)
         files_column.setContentsMargins(0, 0, 0, 0)
@@ -469,6 +472,7 @@ class MainWindow(QMainWindow):
                          + (f" {model_tip}." if model_tip else ""))
         self.ollama_panel.show_state(host, text, tip=tip,
                                      can_start=down and not own and local, can_stop=own or (answers and local),
+                                     can_disconnect=not local,
                                      model=model, placement=ollama_server.placement(state, model), model_tip=model_tip)
         self._pace_polls()
 
@@ -538,6 +542,24 @@ class MainWindow(QMainWindow):
         self._ollama_state = None  # "Checking…" until the next poll tells
         self._show_ollama()
         self._poll_ollama()
+
+    def _connect_ollama(self) -> None:
+        """
+        Asks for an Ollama URL and connects Local Fox to it.
+        """
+        if not self.session:
+            self._local_error("Open a project before connecting to an Ollama server.")
+            return
+        host = self.session.config["ollama_host"]
+        text, accepted = QInputDialog.getText(self, "Connect to an Ollama server", "Server URL:", QLineEdit.Normal, host)
+        if accepted:
+            self._set_host(text)
+
+    def _disconnect_ollama(self) -> None:
+        """
+        Returns Local Fox to its localhost Ollama server.
+        """
+        self._set_host(config_module.DEFAULTS["ollama_host"])
 
     def _own_server(self, host: str) -> bool:
         """
